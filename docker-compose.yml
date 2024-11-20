@@ -1,0 +1,47 @@
+
+services:
+  backend:
+    build:
+      context: ./api                     # Backend folder containing Dockerfile
+      dockerfile: Dockerfile             # Dockerfile inside WebApplication1
+    ports:
+      - "5000:80"                        # Map container port 80 to host port 5000
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development # Set environment variable for .NET
+      - ./api/WebApplication1/taskdb.sqlite:/app/taskdb.sqlite
+    depends_on:
+      - db                               # Backend depends on the database service
+    networks:
+      - app-network                      # Use a shared network
+
+  frontend:
+    build:
+      context: ./my-react-app            # Frontend folder containing Dockerfile
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"                        # Map container port 80 to host port 3000
+    environment:
+      - REACT_APP_API_URL=http://backend:5000/api # Use backend service name in Docker network
+    depends_on:
+      - backend                          # Frontend depends on backend service
+    networks:
+      - app-network
+
+  db:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    environment:
+      SA_PASSWORD: "YourStrongPassword123" # Set a strong SA password
+      ACCEPT_EULA: "Y"
+    ports:
+      - "1433:1433"                      # Map container port 1433 to host port 1433
+    volumes:
+      - ./api/taskdb.sqlite:/app/taskdb.sqlite          # Persist database data
+    networks:
+      - app-network
+
+volumes:
+  dbdata:                                # Define a named volume for database persistence
+
+networks:
+  app-network:
+    driver: bridge                       # Use bridge network for communication
